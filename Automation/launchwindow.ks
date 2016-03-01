@@ -1,15 +1,32 @@
 lock tLan to mod( abs((mod((target:orbit:longitudeofascendingnode+360),360)-body:rotationangle)),360).
 local shiplon is longitude+360.
+local alt is false.
 Declare function enterwindow{
-	local offset is tricalc().
+	
+	if target:orbit:inclination<ship:latitude { //If normal launch is impossible.
+		set difference to vang(normalvector(ship),normalvector(target)).
+		set alt to true.
+		set min to ship:orbit:inclination-target:orbit:inclination.
+	}
+	else{//If normal launch is possible.
+		local offset is tricalc().
+		set min to 1.
+	}
 	local difference is 1000.
-	until difference<1  {
+	until difference<min+.2  {
 		if difference>30{set warp to 4.}
-		else if difference<50 and difference > 3 {set warp to 3.}
-		else if difference <3 and difference> 2 {set warp to 2.}
-		else if difference <2 and difference> 1{set warp to 1.}
-		set difference to abs(c-(shiplon-tlan)).
-		print "Relative LAN to Target: " + difference at (0,12).
+		else if difference<50 and difference > min+2 {set warp to 3.}
+		else if difference <min+2 and difference> min+1.5 {set warp to 2.}
+		else if difference <min+1.5 and difference> min+.2{set warp to 1.}
+		if alt{
+			set difference to vang(normalvector(ship),normalvector(target)).
+			Print "Relative Inclination:   "+ difference at (0,12).
+			print "Minimum R. Inclination: "+ min at (0,13).
+		}
+		else{
+			set difference to abs(c-(shiplon-tlan)).
+			print "Relative LAN to Target: " + difference at (0,12).
+		}
 		wait .001.
 	}
 	set warp to 0.
