@@ -201,11 +201,13 @@ declare function closedloopguidance{
 		//updatea().
 		if tlaunch = 1 and mod(floor(time:seconds),5) = 0 and floor(time:seconds)<> oldtime{
 			set angle to vang(normalvector(ship),tgtnorm).
-			set oldtime to floor(time:seconds).
-			if vang(tgtnorm, ship:velocity:orbit) <90
-				set azimuth to azimuth+angle.
-			else
-				set azimuth to azimuth-angle.
+			if not (angle > 1){
+				set oldtime to floor(time:seconds).
+				if vang(tgtnorm, ship:velocity:orbit) <90
+					set azimuth to azimuth+angle.
+				else
+					set azimuth to azimuth-angle.
+			}
 		}	
 		set Kp to (.05/twr).
 		set dt to time:seconds - t0.
