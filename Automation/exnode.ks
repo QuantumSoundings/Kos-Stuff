@@ -1,9 +1,7 @@
 function warpto{
 	parameter targetTime.
-	//print " I MADE IT TO WARPPPPP".
 	set targetTime to targetTime+time:seconds.
 	lock dif to targetTime-time:seconds.
-	//print dif.
 	until dif < 2 {
 		if dif> 10000
 			set warp to 4.
@@ -53,7 +51,6 @@ declare function executenode{
 		}
 	}
 	when nd:eta<=durationest/2 + 10 then{
-		print "IN THE TRIGGER".
 		set ship:control:mainthrottle to 0.		
 		set ship:control:fore to 1.
 		set ship:control:mainthrottle to 0.
@@ -81,3 +78,4 @@ declare function executenode{
 	set tthrottle to 0.
 	remove nd.
 }
+
