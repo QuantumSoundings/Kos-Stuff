@@ -115,6 +115,32 @@ declare function circularize{
 		add myNode.
 	}
 }
+declare function hohmann{
+	print (positionat(ship,time:seconds)-ship:body:position):mag-body:radius.
+	set newsma to (periapsis+(body:radius*2)+target:altitude)/2.
+	set temperiod to 2*constant:pi*sqrt((newsma*newsma*newsma)/body:mu).
+	set halfp to temperiod/2.
+	set posv to positionat(target,time:seconds+halfp)-target:body:position.
+	set temp to halfp/(360/target:orbit:period).
+	set tempt to time:seconds.
+	until tempt>time:seconds+ship:orbit:period{
+		set shippos to positionat(ship,tempt)-ship:body:position.
+		if ( vang(shippos,posv)>179)
+			break.
+		else
+			set tempt to tempt+10.
+	}
+	print positionat(ship,tempt):mag.
+	set dv to instantvelatalt((positionat(ship,tempt)-ship:body:position):mag-body:radius,newsma)-instantvelatalt((positionat(ship,tempt)-ship:body:position):mag-body:radius,0).
+	print dv.
+	set myNode to node(tempt,0,0,dv).
+	add mynode.
+}
+
+declare function correction{
+
+}
+	
 declare function debug{
 	clearscreen.
 	
@@ -124,8 +150,7 @@ declare function debug{
 	print orbit:trueanomaly at (0,5).
 	wait .5.
 	}
-	//until false{
-		
+	//until false{	
 	//	//wait 1.
 	////}
 }
