@@ -7,6 +7,7 @@ declare local pitch to 90.
 declare local pinc to 0.
 declare local loop to false.
 declare local azimuth to 90.
+declare local timetotargetapo to 0.
 set cbody to body("Earth").
 lock g to earth:mu / (altitude + earth:radius)^2.
 lock twr to max(.001, ship:maxthrust/(ship:mass*g)).
@@ -32,6 +33,9 @@ declare local function flightreadout{
 	if tlaunch=1 {
 	print "Relative Inclination: "+ vang(normalvector(ship),normalvector(target)) at (0,11).
 	}
+	print "Time to TGTAPO: " + timetotargetapo at (0,20).
+	print "PROGRADE HEADING: " + headingfromvector(srfprograde:vector) at (0,21).
+	print "PROGRADE PITCH: " + pitchfromvector(srfprograde:vector) at (0,22).
 	if loop{
 	print "P:    " + Pz at (0,12).
 	print "Kp:   " + Kp at (0,13).
@@ -41,6 +45,16 @@ declare local function flightreadout{
 	print "Kd:   " + kd at (0,17).
 	}
 }.
+declare function headingfromvector{
+	parameter vector.
+	set a1 to vdot(ship:up:vector,vector)*vector:normalized.
+	set a2 to vector-a1.
+	return vang(ship:north:vector,a2).
+}
+declare function pitchfromvector{
+	parameter vector.
+	return 90-vang(ship:up:vector,vector).
+}
 declare function prelaunchsetup{
 	//Set up triggers for fairing seperation
 	list parts in myparts.
@@ -134,24 +148,51 @@ declare function preprogramedguidance{
 	set ship:control:mainthrottle to 1.0.
 	countdown().
 	clearscreen.
+	lock progradepitch to pitchfromvector(srfprograde:vector).
 	set ship:control:mainthrottle to 1.0.
-		
+	if twr>1.7
+		set pitchstart to 50.
+	else if twr<1.7 and twr>1.4
+		set pitchstart to 75.
+	else
+		set pitchstart to 100.
 	lock steering to heading(azimuth,pitch).
+	when airspeed>= pitchstart then{
+		lock steering to heading(azimuth,85).
+	}.
+	when progradepitch<=85 and airspeed>=pitchstart then{
+		lock steering to heading(azimuth,progradepitch).
+	}.
 	until ship:airspeed>1000 {
 		flameout().
 		if twr<>0{
 			set est to floor((1000-ship:airspeed)/(twr*g)).
 			if est<>0{
 				set pinc to (pitch-45)/est.
+				if altitude<8000
+					set pinc to pinc*.5.
+				else if altitude>8000 and altitude<11000
+					set pinc to pinc*.9.
+				else if altitude>11000 and altitude<16000
+					set pinc to pinc*1.1.
+				
 			}
-			if ship:airspeed >100{
+			//if ship:airspeed >pitchstart{
+			//	lock steering to heading(azimuth,pitch-pinc).
+			//	set pitch to pitch-pinc.
+			//}
+			if altitude>20000{
 				lock steering to heading(azimuth,pitch-pinc).
 				set pitch to pitch-pinc.
-			}	
+			}
+			else if airspeed>=progradepitch
+				set pitch to progradepitch.
+				
 		}
 		flightreadout().
 		wait 1.
 	}
+	
 	
 	clearscreen.
 	lock steering to heading(azimuth,45).
@@ -162,27 +203,52 @@ declare function preprogramedguidance{
 		flightreadout().
 		wait 1.
 	}
-	lock steering to heading(azimuth,30).
+	
 	
 	
 	when maxthrust = 0 and periapsis <tgtapo and stage:number>2 then { 
 		stage.
 		preserve.
 	}.
+	set oldt to time:seconds.
+	set oldapo to apoapsis.
+	set timetotargetapo to 50.
+	set p1 to true.
+	set p2 to false.
+	set p3 to false.
+	when progradepitch<=30 then {
+		lock steering to heading(azimuth,progradepitch).
+	}
+	
 	until apoapsis >tgtapo{
-		//updatea().
-		lock steering to heading(azimuth,30).
+		
+		if oldt<>time:seconds{
+			set deltaapo to (apoapsis-oldapo)/(time:seconds-oldt).
+			set timetotargetapo to (tgtapo-apoapsis)/deltaapo.
+		}
+		if timetotargetapo>50 and p1 = true
+			lock steering to heading(azimuth,30).
+		if (timetotargetapo<50 and timetotargetapo>20) or p2= true{
+			lock steering to heading(azimuth,15).
+			set p1 to false.
+			set p2 to true.
+		}
+		if (timetotargetapo<20 and timetotargetapo>0) or p3= true {
+			lock steering to heading(azimuth,0).
+			set p2 to false.
+			set p3 to true.
+		}
 		flightreadout().
-		wait 1.
+		wait .001.
 	}
 }
 
 declare function closedloopguidance{
-	local pitch is 30.
+	local pitch is 0.
 	// Set up the pid-loop for final ascent.
 	set loop to true.
 	
-	set ttasetpoint to 1.
+	set ttasetpoint to 0.
 	set Pz to ttasetpoint-verticalspeed.
 	set I to 0.
 	Set D to 0.
@@ -192,12 +258,18 @@ declare function closedloopguidance{
 	set Kd to .1.
 	set angold to 0.
 	
+	set pitchmin to -5.
+	
 	lock pchange to Kp*Pz + Ki*I + Kd*D.
 	if tlaunch =1
 		set tgtnorm to normalvector(target).
 	set t0 to time:seconds.
 	set oldtime to 0.
-	until periapsis > tgtapo-4000{
+	until periapsis > tgtapo-2000{
+		if apoapsis < tgtapo+200
+			set pitchmin to 0.
+		else
+			set pitchmin to -5.
 		//updatea().
 		if tlaunch = 1 and mod(floor(time:seconds),5) = 0 and floor(time:seconds)<> oldtime{
 			set angle to vang(normalvector(ship),tgtnorm).
@@ -219,9 +291,9 @@ declare function closedloopguidance{
 				set pitch to 0.
 				//set D to 0.
 				set I to 0.
-			} else if pitch + pchange <-5 and d > 0{
-				lock steering to heading(azimuth,-5).
-				set pitch to -5.
+			} else if pitch + pchange <pitchmin and d > 0{
+				lock steering to heading(azimuth,pitchmin).
+				set pitch to pitchmin.
 				//set D to 0.
 				set I to 0.
 			} else if pitch+ pchange> 45 {
@@ -262,3 +334,4 @@ function main{
 	closedloopguidance().
 }
 main().
+set ship:control:pilotmainthrottle to 0.
