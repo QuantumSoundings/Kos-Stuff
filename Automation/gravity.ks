@@ -1,7 +1,11 @@
-declare parameter tgtapo.
+declare parameter tgtapom.
+declare local tgtapo to tgtapom*1000.
+declare parameter tgtpem.
+declare local tgtpe to tgtpem*1000.
 declare parameter tlaunch.
 Declare local cthrust to 0.
 declare local twr to 0.
+declare local pitch to 90.
 declare local est to 0.
 declare local pitch to 90.
 declare local pinc to 0.
@@ -14,6 +18,7 @@ lock twr to max(.001, ship:maxthrust/(ship:mass*g)).
 declare local status to "Preparing for Launch.".
 clearscreen.
 copy manu from 0.
+copy launchwindow from 0.
 run once launchwindow.
 run once manu.
 
@@ -45,6 +50,7 @@ declare local function flightreadout{
 	print "Kd:   " + kd at (0,17).
 	}
 }.
+
 declare function headingfromvector{
 	parameter vector.
 	set a1 to vdot(ship:up:vector,vector)*vector:normalized.
@@ -55,6 +61,7 @@ declare function pitchfromvector{
 	parameter vector.
 	return 90-vang(ship:up:vector,vector).
 }
+
 declare function prelaunchsetup{
 	//Set up triggers for fairing seperation
 	list parts in myparts.
@@ -131,19 +138,19 @@ declare function countdown{
 	print "Lift-off in:".
 	from{local x is 10.} until x = 0 step{ set x to x-1.} do{
 		print x.
-		if x = 5{
-			print "Clearing Towers.".
+		if x = 6{
+			print "Preburning.".
 			stage.
 		}
-		else if x= 2{
-			print "Igniting Engines.".
-			stage.
+		else if x= 1{
+		print "Releasing clamps".
+		stage.
 		}
 		wait 1.
 	}
-	stage.
 	Print "Lift-off. Engaging Auto-Control.".
 }
+
 declare function preprogramedguidance{
 	set ship:control:mainthrottle to 1.0.
 	countdown().
@@ -327,6 +334,7 @@ declare function closedloopguidance{
 	clearscreen.
 	wait 2.
 }
+
 
 function main{
 	prelaunchsetup().
