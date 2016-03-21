@@ -18,7 +18,7 @@ Declare function enterwindow{
 		if difference>30{set warp to 4.}
 		else if difference<50 and difference > min+2 {set warp to 4.}
 		else if difference <min+2 and difference> min+1.5 {set warp to 3.}
-		else if difference <min+1.5 and difference> min+1.0 {set warp to 3.}
+		else if difference <min+1.5 and difference> min+1.0 {set warp to 2.}
 		else if difference <min+1.0 and difference> min+.2{set warp to 1.}
 		if alt{
 			set difference to vang(normalvector(ship),normalvector(target)).
