@@ -4,13 +4,14 @@ Scripts for kos
 #Gravity.ks Basic usage:
 ```
 copy gravity from 0.
-run gravity(250,150,0).
+run gravity(250,150,0,0).
 ```
 
 Explanation of parameters:
 - Target apoapsis
 - Target periapsis
 - Targetted launch ? Set to 1 to launch into the plane of the target.
+- Target Inclination. Inclination can only be higher than the latitude of your launchsite. For example if you launch from cape canaveral you can only launch into inclinations from 28-90.
 
 Special options:
 - Setting target periapsis to 0 will, once target apoapsis is reached, burn until the current stage is depleted, maximising the apoapsis of the final orbit.
