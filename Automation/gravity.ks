@@ -2,6 +2,7 @@ declare parameter tgtapom.
 declare local tgtapo to tgtapom*1000.
 declare parameter tgtpem.
 declare local tgtpe to tgtpem*1000.
+//Note: Setting target periapse to 0 will burn the final launch stage until it's engines flame out.
 declare parameter tlaunch.
 Declare local cthrust to 0.
 declare local twr to 0.
@@ -15,6 +16,7 @@ declare local timetotargetapo to 0.
 set cbody to body("Earth").
 lock g to earth:mu / (altitude + earth:radius)^2.
 lock twr to max(.001, ship:maxthrust/(ship:mass*g)).
+lock mylatitude to latitude.
 declare local status to "Preparing for Launch.".
 clearscreen.
 copy manu from 0.
@@ -32,11 +34,13 @@ declare local function flightreadout{
 	print "Current TWR:    "+ twr             at (0,6).
 	print "Current Mass:   "+ ship:mass       at (0,7).
 	print "Current Accel:  "+ twr*g       at (0,8).
-	print "Heading:        " + azimuth          at (0,9).
+	print "Current Lat:" + latitude	at (0,9).
+	print "Take off Lat:" + mylatitude at (0,10).
+	print "Heading:        " + azimuth          at (0,11).
 	//print "Time to 1000m/s:" + est at (0,10).
-	print "Current Vel:    " + ship:airspeed at (0,10).
+	print "Current Vel:    " + ship:airspeed at (0,12).
 	if tlaunch=1 {
-	print "Relative Inclination: "+ vang(normalvector(ship),normalvector(target)) at (0,11).
+	print "Relative Inclination: "+ vang(normalvector(ship),normalvector(target)) at (0,12).
 	}
 	print "Time to TGTAPO: " + timetotargetapo at (0,20).
 	print "PROGRADE HEADING: " + headingfromvector(srfprograde:vector) at (0,21).
@@ -111,7 +115,6 @@ declare function prelaunchsetup{
 			set azimuth to arctan(vx/vy).
 			}
 		clearscreen.
-	
 	}
 }
 
@@ -250,6 +253,26 @@ declare function preprogramedguidance{
 	}
 }
 
+declare function orbitdone {
+  if tgtpe > 0 {
+    if periapsis > tgtpe {
+      return True.
+    } else {
+      return False.
+    }
+  } else {
+    list engines in mylist.
+    for eng in mylist {
+	if eng:ignition {
+	  if not eng:flameout {
+	    return False.
+	  }
+	}
+    }
+    return True.
+  }
+}
+
 declare function closedloopguidance{
 	local pitch is 0.
 	// Set up the pid-loop for final ascent.
@@ -272,7 +295,7 @@ declare function closedloopguidance{
 		set tgtnorm to normalvector(target).
 	set t0 to time:seconds.
 	set oldtime to 0.
-	until periapsis > tgtapo-2000{
+	until orbitdone() {
 		if apoapsis < tgtapo+200
 			set pitchmin to 0.
 		else
@@ -286,7 +309,7 @@ declare function closedloopguidance{
 					set azimuth to azimuth+angle.
 				else
 					set azimuth to azimuth-angle.
-			}
+				}
 		}	
 		set Kp to (.05/twr).
 		set dt to time:seconds - t0.
