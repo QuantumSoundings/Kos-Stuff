@@ -4,13 +4,10 @@ declare parameter tgtpem.
 declare local tgtpe to tgtpem*1000.
 declare parameter tlaunch.
 declare parameter inclinedlaunch.
-Declare local cthrust to 0.
-declare local twr to 0.
 declare local pitch to 90.
 declare local est to 0.
 declare local pitch to 90.
 declare local pinc to 0.
-declare local loop to false.
 declare local azimuth to 90.
 declare local timetotargetapo to 0.
 set cbody to body("Earth").
@@ -35,7 +32,6 @@ declare local function flightreadout{
 	print "Current Mass:   "+ ship:mass       at (0,7).
 	print "Current Accel:  "+ twr*g       at (0,8).
 	print "Heading:        " + azimuth          at (0,9).
-	//print "Time to 1000m/s:" + est at (0,10).
 	print "Current Vel:    " + ship:airspeed at (0,10).
 	if tlaunch=1 {
 	print "Relative Inclination: "+ vang(normalvector(ship),normalvector(target)) at (0,11).
@@ -52,7 +48,6 @@ declare local function flightreadout{
 	print "Kd:   " + kd at (0,17).
 	}
 }.
-
 declare function headingfromvector{
 	parameter vector.
 	set a1 to vdot(ship:up:vector,vector)*vector:normalized.
@@ -277,7 +272,6 @@ declare function closedloopguidance{
 	local pitch is 0.
 	lock progradeheading to headingfromvector(prograde:vector).
 	// Set up the pid-loop for final ascent.
-	set loop to true.
 	
 	set ttasetpoint to 0.
 	set Pz to ttasetpoint-verticalspeed.
@@ -358,7 +352,6 @@ declare function closedloopguidance{
 	clearscreen.
 	wait 2.
 }
-
 
 function main{
 	prelaunchsetup().
