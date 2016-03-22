@@ -2,7 +2,7 @@ set target to vessel("GeoSat 4").
 copy gravity from 0.
 copy systems from 0.
 copy launchwindow from 0.
-run gravity(250000,1).//1 is for targeted launch, 0 is for untargeted.
+run gravity(250,250,1).//1 is for targeted launch, 0 is for untargeted.
 run once systems.
 comms("earth").
 solarpanels().
