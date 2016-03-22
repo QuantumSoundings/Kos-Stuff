@@ -3,6 +3,7 @@ declare local tgtapo to tgtapom*1000.
 declare parameter tgtpem.
 declare local tgtpe to tgtpem*1000.
 declare parameter tlaunch.
+declare parameter inclinedlaunch.
 Declare local cthrust to 0.
 declare local twr to 0.
 declare local pitch to 90.
@@ -15,6 +16,7 @@ declare local timetotargetapo to 0.
 set cbody to body("Earth").
 lock g to earth:mu / (altitude + earth:radius)^2.
 lock twr to max(.001, ship:maxthrust/(ship:mass*g)).
+lock progradeheading to headingfromvector(prograde:vector).
 declare local status to "Preparing for Launch.".
 clearscreen.
 copy manu from 0.
@@ -39,7 +41,7 @@ declare local function flightreadout{
 	print "Relative Inclination: "+ vang(normalvector(ship),normalvector(target)) at (0,11).
 	}
 	print "Time to TGTAPO: " + timetotargetapo at (0,20).
-	print "PROGRADE HEADING: " + headingfromvector(srfprograde:vector) at (0,21).
+	print "PROGRADE HEADING: " + headingfromvector(prograde:vector) at (0,21).
 	print "PROGRADE PITCH: " + pitchfromvector(srfprograde:vector) at (0,22).
 	if loop{
 	print "P:    " + Pz at (0,12).
@@ -96,6 +98,9 @@ declare function prelaunchsetup{
 	when altitude > 100000 then { 
 		RCS on.
 	}.
+	when abs(progradeheading-inclinedlaunch)<.5 then{
+		set azimuth to progradeheading.
+	}.
 	//Setup Targeted Launch
 	if tlaunch = 1{
 		enterwindow().
@@ -112,6 +117,23 @@ declare function prelaunchsetup{
 			}
 		clearscreen.
 	
+	}
+	if tlaunch=0 {
+		if inclinedlaunch <latitude{
+			print "ERROR INCLINATION CANNOT BE LOWER THAN LATITUDE".
+			set breaker to 0/0.
+		}
+		set tempangle to cos(inclinedlaunch)/cos(ship:latitude).
+		if tempangle>1{
+			print "Direct Launch Impossible".
+		} else {
+			set azimuth to arcsin(tempangle).
+			local veq is (2*constant:pi*body:radius)/body:rotationperiod.
+			local ospeed is sqrt(constant:G*body:mass/(body:radius+tgtapo)).
+			local vx is ospeed*sin(azimuth)-veq*cos(latitude).
+			local vy is ospeed*cos(azimuth).
+			set azimuth to arctan(vx/vy).
+		}
 	}
 }
 
@@ -142,12 +164,13 @@ declare function countdown{
 			print "Preburning.".
 			stage.
 		}
-		else if x= 1{
+		else if x= 3{
 		print "Releasing clamps".
 		stage.
 		}
 		wait 1.
 	}
+	stage.
 	Print "Lift-off. Engaging Auto-Control.".
 }
 
@@ -252,6 +275,7 @@ declare function preprogramedguidance{
 
 declare function closedloopguidance{
 	local pitch is 0.
+	lock progradeheading to headingfromvector(prograde:vector).
 	// Set up the pid-loop for final ascent.
 	set loop to true.
 	
